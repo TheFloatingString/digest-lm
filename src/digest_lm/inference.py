@@ -24,7 +24,7 @@ def save_github_repo_locally(github_org, github_repo_name):
     auth = Auth.Token(os.getenv("GITHUB_ACCESS_TOKEN"))
     g = Github(auth=auth)
 
-    repo = g.get_repo("luchog01/minimalistic-fastapi-template")
+    repo = g.get_repo(f"{github_org}/{github_repo_name}")
     contents = repo.get_contents("")
 
     print(contents)
@@ -37,32 +37,29 @@ def save_github_repo_locally(github_org, github_repo_name):
         if file_content.type == "dir":
             contents.extend(repo.get_contents(file_content.path))
         else:
-            # print(file_content)
             print(".", end="")
-            # FILE_URL = f"https://raw.githubusercontent.com/PyGithub/PyGithub/refs/heads/main/github/ContentFile.py"
-            # FILE_URL = f"https://raw.githubusercontent.com/PyGithub/PyGithub/refs/heads/main/.git-blame-ignore-revs"
-            FILE_URL = f"https://raw.githubusercontent.com/{repo.full_name}/refs/heads/main/{file_content.path}"
+            FILE_URL = f"https://raw.githubusercontent.com/{github_org}/{github_repo_name}/refs/heads/{repo.default_branch}/{file_content.path}"
+            print(FILE_URL)
             content = requests.get(FILE_URL).text
-            # print(content)
-            # print(file_content.path)
-            # print(FILE_URL)
             RAW_GITHUB_CONTENT += f"{file_content.path}\n{content}\n"
-
-            # print("--------------------------------")
-            # break
-
-    # for file in contents:
-    #     print(file.name)
-    #     # print(file.decoded_content)
-    #     code = repo.get_contents(file.path)
-    #     # print(code.decoded_content)
-
-    #     content = requests.get(FILE_URL).text
-    #     print(content)
-    #     print("--------------------------------")
 
     with open(f"static/{github_org}-{github_repo_name}.txt", "w") as f:
         f.write(RAW_GITHUB_CONTENT)
+
+
+def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
+    with open(f"static/{github_org}-{github_repo_name}.txt", "r") as f:
+        RAW_GITHUB_CONTENT = f.read()
+
+    completion = client.chat.completions.create(
+        model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+        messages=[
+            {"role": "system", "content": f"You are a helpful assistant that can generate curl scripts for a given codebase. The user provides the codebase. Generate a sample curl request for each endpoint in the codebase. Respond with all the curl requests, separated by newlines. Only return the curl requests, do not return anything else. The base url is {os.getenv('BASE_URL')}"},
+            {"role": "user", "content": f"Codebase: {RAW_GITHUB_CONTENT}"},
+        ],
+    )
+
+    return {"curl_scripts": completion.choices[0].message.content}
 
 
 def run_inference(
@@ -79,13 +76,15 @@ def run_inference(
         messages=[
             {
                 "role": "system",
-                "content": f"You are a vercel instance that hosts the following code. {RAW_GITHUB_CONTENT}. The user sends the following request. What do you respond? Respond in the following JSON format: {{'status_code': <int>, 'response': <str>}}",
+                "content": f"You are a vercel instance that hosts the following code. {RAW_GITHUB_CONTENT}. The user sends the following request. What do you respond? Respond in the following JSON format: {{'status_code': <int>, 'response': <str>}} Only return the JSON, do not return anything else.",
             },
             {"role": "user", "content": f"curl {action} {endpoint}"},
         ],
     )
 
-    return {"message": completion.choices[0].message.content}
+    return completion.choices[0].message.content
+
+    # return {"message": completion.choices[0].message.content}
 
 
 if __name__ == "__main__":

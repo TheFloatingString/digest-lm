@@ -3,6 +3,7 @@ import argparse
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 GITHUB_ORG = os.getenv("GITHUB_ORG")

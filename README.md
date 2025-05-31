@@ -34,3 +34,4 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8080
 - [ ] dashboard for HTML/stats?
 - [ ] browser based terminal?
 - [ ] (maybe Golang for fun?)
+- [ ] port everything to a cli (quick fix)

@@ -1,9 +1,15 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from digest_lm.inference import run_inference
 
 import logging
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,12 +36,15 @@ async def catch_all(request: Request, full_path: str):
     logging.info(f"Unknown route hit: {method} {path}")
 
     response = run_inference(
-        github_repo_name="luchog01/minimalistic-fastapi-template",
+        github_repo_name=os.getenv("GITHUB_REPO_NAME"),
+        github_org=os.getenv("GITHUB_ORG"),
         endpoint=path,
         action=method,
     )
 
-    response_dict = eval(response["message"])
-    return JSONResponse(
-        status_code=response_dict["status_code"], content=response_dict["response"]
-    )
+    # response_dict = eval(response["message"])
+    # return Response(content=eeeeeeeeeeee["response"], status_code=response_dict["status_code"])
+    # return JSONResponse(
+    #     status_code=response_dict["status_code"], content=response_dict["response"]
+    # )
+    return Response(content=str(response), status_code=200)
