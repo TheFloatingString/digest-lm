@@ -38,8 +38,6 @@
 #         # break
 
 
-
-
 # # for file in contents:
 # #     print(file.name)
 # #     # print(file.decoded_content)
@@ -60,35 +58,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-with open("raw_github_content.txt", "r") as f:
-    RAW_GITHUB_CONTENT = f.read()
 
 client = OpenAI(
-    api_key=os.environ.get("LLAMA_API_KEY"),
-    base_url="https://api.llama.com/compat/v1/"
+    api_key=os.environ.get("LLAMA_API_KEY"), base_url="https://api.llama.com/compat/v1/"
 )
 
-completion = client.chat.completions.create(
-    model="Llama-4-Maverick-17B-128E-Instruct-FP8",
-    messages=[
-        {
-          "role": "system",
-          "content": f"You are a vercel instance that hosts the following code. {RAW_GITHUB_CONTENT}. The user sends the following request. What do you respond?"
-        },
-        {
-          "role": "user",
-          "content": "curl -XGET /health"
-        }
-    ],
-)
 
-print(completion.choices[0].message.content)
-
-def run_inference(code: str, user_input: str) -> str:
+def run_inference(github_repo_name: str, endpoint: str, action: str) -> str:
     """
     Run inference on the code and user input.
     """
-    return "Hello, world!"
+    with open("raw_github_content.txt", "r") as f:
+        RAW_GITHUB_CONTENT = f.read()
 
+    completion = client.chat.completions.create(
+        model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+        messages=[
+            {
+                "role": "system",
+                "content": f"You are a vercel instance that hosts the following code. {RAW_GITHUB_CONTENT}. The user sends the following request. What do you respond? Respond in the following JSON format: {{'status_code': <int>, 'response': <str>}}",
+            },
+            {"role": "user", "content": f"curl {action} {endpoint}"},
+        ],
+    )
 
-"https://raw.githubusercontent.com/luchog01/minimalistic-fastapi-template/refs/heads/main/api/src/users/repository.py"
+    return {"message": completion.choices[0].message.content}
