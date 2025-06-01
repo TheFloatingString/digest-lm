@@ -35,16 +35,23 @@ async def catch_all(request: Request, full_path: str):
     path = request.url.path
     logging.info(f"Unknown route hit: {method} {path}")
 
-    response = run_inference(
+    body = await request.body()
+    body_str = body.decode()  # Now it's bytes → str
+
+    response = await run_inference(
         github_repo_name=os.getenv("GITHUB_REPO_NAME"),
         github_org=os.getenv("GITHUB_ORG"),
         endpoint=path,
         action=method,
+        body=body_str,
+        headers=request.headers,
     )
+
+    response_dict = eval(response)
 
     # response_dict = eval(response["message"])
     # return Response(content=eeeeeeeeeeee["response"], status_code=response_dict["status_code"])
     # return JSONResponse(
     #     status_code=response_dict["status_code"], content=response_dict["response"]
     # )
-    return Response(content=str(response), status_code=200)
+    return Response(content=str(response_dict['response']), status_code=response_dict['status_code'])#, status_code=str(response_dict['status_code']))

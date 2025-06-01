@@ -27,8 +27,11 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8080
 - [x] add this to a FastAPI app
 - [x] user can pull any github repo
   - [x] have argparse do it for now
-- [ ] generate all the get requests as shell scripts for curl requests
+- [x] generate all the get requests as shell scripts for curl requests
 - [ ] find candidate repos to use
+- [ ] create dahsboard + unit test in cli
+- [x] pipe in headers
+- [x] pipe in body
 - [ ] keep track of logs
 - [ ] have meta prompts (i.e. the entire city is pinging the website)
 - [ ] dashboard for HTML/stats?
