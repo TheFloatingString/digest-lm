@@ -39,3 +39,5 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8080
 - [ ] (maybe Golang for fun?)
 - [ ] port everything to a cli (quick fix)
 - [ ] do accuracy comparison between llama 4 and llama 3.1
+- [ ] do integration between frontend and backend
+  - [ ] pip all unit tests into the frontend

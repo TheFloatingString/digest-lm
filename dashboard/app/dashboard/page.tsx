@@ -83,6 +83,33 @@ export default function Page() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    fetch("http://localhost:8080/digest-lm/unit-tests")
+      .then(response => response.json())
+      .then(data => {
+
+        setUnitTests(prev => [...prev, ...data.tests]);
+
+        // setUnitTests(data.tests)
+      })
+      .catch(error => console.error("Error:", error));
+    fetch("http://localhost:8080/digest-lm/requests-per-minute")
+      .then(response => response.json())
+      .then(data => {
+        setRequestsPerMinute(prev => [...prev, ...data.requests]);
+      })
+      .catch(error => console.error("Error:", error));
+    fetch("http://localhost:8080/digest-lm/output")
+      .then(response => response.json())
+      .then(data => {
+        setOutput(prev => [...prev, ...data.output]);
+      })
+      .catch(error => console.error("Error:", error));
+    fetch("http://localhost:8080/digest-lm/actions")
+      .then(response => response.json())
+      .then(data => {
+        setActions(prev => [...prev, ...data.actions]);
+      })
+      .catch(error => console.error("Error:", error));
   }, [messages]); // scrolls every time messages update
 
   return (
@@ -169,7 +196,7 @@ export default function Page() {
                   <CardDescription></CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea>
+                  <ScrollArea className="h-[250px]">
                     {requestsPerMinute.map((request, index) => (
                       <div key={index}>{request.name}</div>
                     ))}
@@ -183,9 +210,9 @@ export default function Page() {
                   <CardDescription>curl Requests</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea>
-                    {requestsPerMinute.map((request, index) => (
-                      <div key={index}>{request.name}</div>
+                  <ScrollArea className="h-[250px]">
+                    {unitTests.map((test, index) => (
+                      <div key={index}>{test.name}</div>
                     ))}
                   </ScrollArea>
                 </CardContent>

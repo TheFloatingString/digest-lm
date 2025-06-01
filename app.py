@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from digest_lm.inference import run_inference
 
@@ -15,6 +16,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
@@ -27,6 +35,44 @@ async def log_requests(request: Request, call_next):
 # @app.get("/")
 # def read_root():
 #     return {"message": "digest-lm"}
+
+
+@app.api_route("/digest-lm/unit-tests", methods=["GET"])
+async def read_root():
+    return {
+        "tests": [
+            {"name": "Test 1", "description": "curl -i https://www.google.com"},
+            {"name": "Test 2", "description": "curl -i https://www.google.com"},
+            {"name": "Test 3", "description": "curl -i https://www.google.com"},
+        ]
+    }
+
+
+@app.api_route("/digest-lm/requests-per-minute", methods=["GET"])
+async def read_root():
+    return {
+        "requests": [
+            {"name": "Request 1", "description": "Request 1 description"},
+        ]
+    }
+
+
+@app.api_route("/digest-lm/output", methods=["GET"])
+async def read_root():
+    return {
+        "output": [
+            {"name": "Output 1", "description": "Output 1 description"},
+        ]
+    }
+
+
+@app.api_route("/digest-lm/actions", methods=["GET"])
+async def read_root():
+    return {
+        "actions": [
+            {"name": "Action 1", "description": "Action 1 description"},
+        ]
+    }
 
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
