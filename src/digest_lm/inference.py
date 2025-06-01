@@ -60,7 +60,7 @@ def generate_instruction(user_message: str) -> str:
         messages=[
             {
                 "role": "system",
-                "content": f"""You are a helpful assistant. Respond with a JSON object in the following format: {{"assistant_message": <str>, "tool_choice": <str>, "tool_input": <str>}}. Your options for tool choices are: 'generate_curl_scripts', 'save_github_repo_locally', 'run_inference'. If the user specifies a GitHub organization and repository, use the 'save_github_repo_locally' tool and set the tool_input='organization_name/repo_name' with the user's choice of organization and repository. Respond naturally in the assistant_message field. If the user asks for an invalid request, return empty string for tool_choice and tool_input. Assume the GitHub repo is always available locally. Only return the JSON, do not return anything else.""",
+                "content": f"""You are a helpful assistant. Respond with a JSON object in the following format: {{"assistant_message": <str>, "tool_choice": <str>, "tool_input": <str>}}. Your options for tool choices are: 'generate_curl_scripts', 'generate_special_curl_scripts', 'save_github_repo_locally', 'run_inference'. If the user specifies a GitHub organization and repository, use the 'save_github_repo_locally' tool and set the tool_input='organization_name/repo_name' with the user's choice of organization and repository. Respond naturally in the assistant_message field. If the user asks for an invalid request, return empty string for tool_choice and tool_input. If the user asks for a special curl script, use the 'generate_special_curl_scripts' tool and set the tool_input='organization_name/repo_name/special_request' with the user's choice of organization, repository, and special request. Assume the GitHub repo is always available locally. If the user is insistent about a tool choice, return the tool choice. Only return the JSON, do not return anything else.""",
             },
             {"role": "user", "content": f"User message: {user_message}"},
         ],
@@ -82,6 +82,26 @@ def convert_curl_script_to_python_requests(curl_script: str) -> dict:
     )
 
     return completion.choices[0].message.content
+
+def generate_special_curl_scripts(github_org: str, github_repo_name: str, special_request: str) -> dict:
+    with open(f"static/{github_org}-{github_repo_name}.txt", "r") as f:
+        RAW_GITHUB_CONTENT = f.read()
+
+    completion = client.chat.completions.create(
+        model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+        messages=[
+            {
+                "role": "system",
+                "content": f"You are a helpful assistant that can generate curl scripts for a given codebase. The user provides the codebase, as well as a special request. Generate a sample curl request for each endpoint in the codebase. Respond with all the curl requests, separated by newlines. Only return the curl requests, do not return anything else. The base url is {os.getenv('BASE_URL')}. Add a -i flag to the curl requests, followed by 'echo\necho ---' between each curl request.",
+            },
+            {"role": "user", "content": f"Special request: {special_request}.\nCodebase: {RAW_GITHUB_CONTENT}"},
+        ],
+    )
+
+    with open(f"scripts/sh/{github_org}-{github_repo_name}.sh", "w") as f:
+        f.write(completion.choices[0].message.content)
+
+    return {"curl_scripts": completion.choices[0].message.content}
 
 
 def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:

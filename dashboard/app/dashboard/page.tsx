@@ -19,6 +19,26 @@ import { Card, CardTitle, CardDescription, CardHeader, CardContent } from "@/com
 import { useEffect, useRef, useState } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+
+const chartConfig = {
+  HTTP_2xx: {
+    label: "HTTP_2xx",
+    color: "#2563eb",
+  },
+  HTTP_error: {
+    label: "HTTP_error",
+    color: "#60a5fa",
+  },
+} satisfies ChartConfig
+
 export default function Page() {
 
   function userMessage(message: string) {
@@ -46,6 +66,16 @@ export default function Page() {
     )
   }
 
+  const [chartData, setChartData] = useState([
+    { timestamp: "January", HTTP_2xx: 186, HTTP_error: 80 },
+    { timestamp: "February", HTTP_2xx: 305, HTTP_error: 200 },
+    { timestamp: "March", HTTP_2xx: 237, HTTP_error: 120 },
+    { timestamp: "April", HTTP_2xx: 73, HTTP_error: 190 },
+    { timestamp: "May", HTTP_2xx: 209, HTTP_error: 130 },
+    { timestamp: "June", HTTP_2xx: 214, HTTP_error: 140 },
+  ]);
+
+
   const [messages, setMessages] = useState([
 
   ])
@@ -69,6 +99,8 @@ export default function Page() {
 
   ])
 
+  const [successRate, setSuccessRate] = useState(0)
+
   const [message, setMessage] = useState("")
 
   const bottomRef = useRef(null);
@@ -89,7 +121,9 @@ export default function Page() {
     fetch("http://localhost:6020/digest-lm/requests-per-minute")
       .then(response => response.json())
       .then(data => {
-        setRequestsPerMinute(prev => [...prev, ...data.requests]);
+        // setRequestsPerMinute(prev => [...prev, ...data.requests]);
+        setChartData(data.requests);
+
       })
       .catch(error => console.error("Error:", error));
     fetch("http://localhost:6020/digest-lm/output")
@@ -102,6 +136,12 @@ export default function Page() {
       .then(response => response.json())
       .then(data => {
         setActions(prev => [...prev, ...data.actions]);
+      })
+      .catch(error => console.error("Error:", error));
+    fetch("http://localhost:6020/digest-lm/success-rate")
+      .then(response => response.json())
+      .then(data => {
+        setSuccessRate(data.success_rate);
       })
       .catch(error => console.error("Error:", error));
   }, [messages]); // scrolls every time messages update
@@ -122,7 +162,7 @@ export default function Page() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             {/* <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6"> */}
             <div className="grid grid-cols-3 gap-4 p-4 lg:px-6">
-              <Card className="row-span-4 col-span-1 flex flex-col">
+              <Card className="row-span-1 col-span-1 flex flex-col">
                 <CardHeader>
                   <CardTitle>Chat</CardTitle>
                   <CardDescription>User conversation</CardDescription>
@@ -131,7 +171,7 @@ export default function Page() {
                 <div className="flex-1 overflow-y-auto px-4 space-y-2">
                   {/* Chat messages */}
                   <div className="flex flex-col space-y-2">
-                    <ScrollArea className="h-[500px]">
+                    <ScrollArea className="h-[250px]">
                       {messages.map((message, index) => {
                         return (
                           <div key={index}>{message}</div>
@@ -183,7 +223,7 @@ export default function Page() {
 
 
 
-              <Card className="row-span-2 col-span-1">
+              <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Actions</CardTitle>
                   <CardDescription>digest-lm steps</CardDescription>
@@ -200,7 +240,7 @@ export default function Page() {
               <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Test Success Rate</CardTitle>
-                  <CardDescription></CardDescription>
+                  <CardDescription><p className="text-2xl font-semibold tabular-nums">{successRate} %</p></CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[250px]">
@@ -214,7 +254,24 @@ export default function Page() {
               <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Requests per Minute</CardTitle>
-                  <CardDescription></CardDescription>
+                  <CardDescription>
+                  <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+      <BarChart accessibilityLayer data={chartData}>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="timestamp"
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          tickFormatter={(value) => value.slice(0, 3)}
+        />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <Bar dataKey="HTTP_2xx" fill="var(--color-HTTP_2xx)" radius={4} />
+        <Bar dataKey="HTTP_error" fill="var(--color-HTTP_error)" radius={4} />
+      </BarChart>
+    </ChartContainer>
+
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[250px]">
@@ -225,7 +282,7 @@ export default function Page() {
                 </CardContent>
               </Card>
 
-              <Card className="row-span-2 col-span-1">
+              <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Unit Tests</CardTitle>
                   <CardDescription>curl Requests</CardDescription>
@@ -239,7 +296,7 @@ export default function Page() {
                 </CardContent>
               </Card>
 
-              <Card className="row-span-2 col-span-1">
+              <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Output</CardTitle>
                   <CardDescription>HTTP Responses</CardDescription>

@@ -19,6 +19,20 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8080
 ```
 
 
+## Priority TODO
+
+- [x] add success rate to frontend
+- [ ] add timestamps per 15 sec to frontend with error code count (200x, 400x, 500x)
+- [ ] add chart to frontend
+- [ ] all of NYC pings the server
+- [ ] recommend changes
+
+## Secondary TODO
+
+- [ ] create cards for actions
+- [ ] clean up duplicate curl requests
+- [ ] clean up aggreagated curl requests
+
 ## TODO
 
 - [x] pull code from GitHub CLI

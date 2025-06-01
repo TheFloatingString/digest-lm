@@ -13,14 +13,16 @@ import json
 import logging
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
 
 curr_action_list = [""]
 list_of_responses = []  # {"timestamp": <str>, "response": <str>, "status_code": <int>}
+list_of_all_responses = []
 list_of_test_str = []
+success_rate = 0 # in pct
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,6 +48,12 @@ async def log_requests(request: Request, call_next):
 # def read_root():
 #     return {"message": "digest-lm"}
 
+@app.api_route("/digest-lm/success-rate", methods=["GET"])
+async def digest_lm_success_rate():
+    return {
+        "success_rate": round(success_rate, 2)
+    }
+
 
 @app.api_route("/digest-lm/unit-tests", methods=["GET"])
 async def digest_lm_unit_tests():
@@ -59,17 +67,59 @@ async def digest_lm_unit_tests():
 
 @app.api_route("/digest-lm/requests-per-minute", methods=["GET"])
 async def digest_lm_requests_per_minute():
+
+    global list_of_all_responses
+
+    curr_timestamp = datetime.now()
+
+    start = curr_timestamp - timedelta(minutes=10)
+
+    reqs_200 = 0
+    reqs_error = 0
+
+    list_of_request_summary = []
+
+    for i in range(10):
+
+        start = start + timedelta(minutes=1)
+        tmp_dict = {
+            "timestamp": start.strftime("%H:%M"),
+            "HTTP_2xx": 0,
+            "HTTP_error": 0
+        }
+
+        print(start)
+        for response in list_of_all_responses:
+            if response["timestamp"] >= start.isoformat() and response["timestamp"] < (start + timedelta(minutes=1)).isoformat():
+                print(response["status_code"])
+                if response["status_code"] == 200:
+                    reqs_200 += 1
+                    tmp_dict["HTTP_2xx"] += 1
+                else:
+                    reqs_error += 1
+                    tmp_dict["HTTP_error"] += 1
+
+        list_of_request_summary.append(tmp_dict)
+
+    print(list_of_request_summary)
+
+    print(reqs_200)
+    print(reqs_error)
+
+    # print(min_timestamp)
+
     return {
-        "requests": [
-            # {"name": "Request 1", "description": "Request 1 description"},
-        ]
+        "requests": list_of_request_summary
     }
 
 
 @app.api_route("/digest-lm/output", methods=["GET"])
 async def digest_lm_output():
+    global success_rate
     print(">>>>>>>")
     print(list_of_responses)
+
+    reqs_200 = 0
 
     refactored_dict = {"output": []}
 
@@ -80,6 +130,19 @@ async def digest_lm_output():
                 "description": response["response"].status_code,
             }
         )
+        print(response["response"].status_code)
+        if response["response"].status_code == 200:
+            reqs_200 += 1
+
+
+    print(success_rate)
+
+    try:
+
+        success_rate = reqs_200 / len(list_of_responses)
+        success_rate = success_rate * 100
+    except ZeroDivisionError:
+        success_rate = 0
 
     return refactored_dict
 
@@ -145,13 +208,22 @@ async def digest_lm_user_message(request: Request):
                     resp = convert_curl_script_to_python_requests(line)
                     print("--------------------------------")
                     print(resp)
+
+                    resp = eval(resp)
                     print("-")
-                    print(eval(resp))
+                    # print(eval(resp))
                     list_of_responses.append(
                         {
                             "timestamp": datetime.now().isoformat(),
-                            "response": eval(resp),
-                            "status_code": 200,
+                            "response": resp,
+                            "status_code": resp.status_code,
+                        }
+                    )
+                    list_of_all_responses.append(
+                        {
+                            "timestamp": datetime.now().isoformat(),
+                            "response": resp,
+                            "status_code": resp.status_code,
                         }
                     )
                     print("--------------------------------")
