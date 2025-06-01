@@ -2,17 +2,25 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pprint import pprint
-from digest_lm.inference import run_inference, generate_instruction
+from digest_lm.terminal_client import save_github_repo_locally
+from digest_lm.inference import (
+    run_inference,
+    generate_instruction,
+    generate_curl_scripts,
+    convert_curl_script_to_python_requests,
+)
 import json
 import logging
 import os
-
+import requests
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
 
 curr_action_list = [""]
-
+list_of_responses = []  # {"timestamp": <str>, "response": <str>, "status_code": <int>}
+list_of_test_str = []
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,31 +49,39 @@ async def log_requests(request: Request, call_next):
 
 @app.api_route("/digest-lm/unit-tests", methods=["GET"])
 async def digest_lm_unit_tests():
-    return {
-        "tests": [
-            {"name": "Test 1", "description": "curl -i https://www.google.com"},
-            {"name": "Test 2", "description": "curl -i https://www.google.com"},
-            {"name": "Test 3", "description": "curl -i https://www.google.com"},
-        ]
-    }
+    refactored_dict = {"tests": []}
+
+    for test_str in list_of_test_str:
+        refactored_dict["tests"].append({"name": test_str, "description": test_str})
+
+    return refactored_dict
 
 
 @app.api_route("/digest-lm/requests-per-minute", methods=["GET"])
 async def digest_lm_requests_per_minute():
     return {
         "requests": [
-            {"name": "Request 1", "description": "Request 1 description"},
+            # {"name": "Request 1", "description": "Request 1 description"},
         ]
     }
 
 
 @app.api_route("/digest-lm/output", methods=["GET"])
 async def digest_lm_output():
-    return {
-        "output": [
-            {"name": "Output 1", "description": "Output 1 description"},
-        ]
-    }
+    print(">>>>>>>")
+    print(list_of_responses)
+
+    refactored_dict = {"output": []}
+
+    for response in list_of_responses:
+        refactored_dict["output"].append(
+            {
+                "name": response["response"].text,
+                "description": response["response"].status_code,
+            }
+        )
+
+    return refactored_dict
 
 
 @app.api_route("/digest-lm/actions", methods=["GET"])
@@ -79,6 +95,9 @@ async def digest_lm_actions():
 
 @app.api_route("/digest-lm/user-message", methods=["POST"])
 async def digest_lm_user_message(request: Request):
+    # list_of_test_str = []
+    # list_of_responses = []
+
     body = await request.body()
     body_str = json.loads(body.decode())
     print(body_str)
@@ -88,11 +107,56 @@ async def digest_lm_user_message(request: Request):
     pprint(model_resp)
     print(type(model_resp))
     # print(eval(model_resp))
+    model_resp_dict = json.loads(model_resp)
     if len(json.loads(model_resp)["tool_choice"]) > 3:
         curr_action_list[0] = str(json.loads(model_resp)["tool_choice"])
     print(curr_action_list)
+    print(model_resp_dict["tool_choice"])
+    print(model_resp_dict["tool_input"])
 
-    model_resp_dict = json.loads(model_resp)
+    GITHUB_ORG = json.loads(model_resp)["tool_input"].split("/")[0]
+    GITHUB_REPO_NAME = json.loads(model_resp)["tool_input"].split("/")[1]
+
+    if model_resp_dict["tool_choice"] == "save_github_repo_locally":
+        save_github_repo_locally(
+            GITHUB_ORG,
+            GITHUB_REPO_NAME,
+        )
+
+    elif model_resp_dict["tool_choice"] == "generate_curl_scripts":
+        curl_scripts = generate_curl_scripts(
+            GITHUB_ORG,
+            GITHUB_REPO_NAME,
+        )
+        print(curl_scripts["curl_scripts"])
+        for line in curl_scripts["curl_scripts"].split("\n"):
+            print(line)
+            if "echo" not in line:
+                list_of_test_str.append(line)
+                print(">>>>>>>>>>>")
+                print(list_of_test_str)
+
+    elif model_resp_dict["tool_choice"] == "run_inference":
+        with open(f"scripts/sh/{GITHUB_ORG}-{GITHUB_REPO_NAME}.sh", "r") as f:
+            curl_script = f.read()
+            for line in curl_script.split("\n"):
+                if "echo" not in line:
+                    print(line)
+                    resp = convert_curl_script_to_python_requests(line)
+                    print("--------------------------------")
+                    print(resp)
+                    print("-")
+                    print(eval(resp))
+                    list_of_responses.append(
+                        {
+                            "timestamp": datetime.now().isoformat(),
+                            "response": eval(resp),
+                            "status_code": 200,
+                        }
+                    )
+                    print("--------------------------------")
+        # run_inference()
+
     print(model_resp_dict)
     return {"message": model_resp_dict["assistant_message"]}
 

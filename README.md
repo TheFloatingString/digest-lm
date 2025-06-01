@@ -32,6 +32,11 @@ uv run uvicorn app:app --reload --host 0.0.0.0 --port 8080
 - [x] create dahsboard + unit test in cli
 - [x] pipe in headers
 - [x] pipe in body
+- [ ] reset all global vars to empty
+- [ ] add curl requests to frontend
+- [ ] connect function calling tools
+- [ ] remove placeholders from frontend
+- [ ] frontend override env vars
 - [ ] keep track of logs
 - [ ] have meta prompts (i.e. the entire city is pinging the website)
 - [x] dashboard for HTML/stats?

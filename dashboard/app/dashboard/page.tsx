@@ -1,6 +1,10 @@
 "use client"
 
 import { AppSidebar } from "@/components/app-sidebar"
+
+import { AlertCircleIcon, BadgeCheckIcon, CheckIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
@@ -33,47 +37,35 @@ export default function Page() {
     )
   }
 
+  function outputMessage(name: string, status_code: string) {
+    return (
+      <Card className="p-2 m-2">
+        <Badge variant="secondary">{status_code}</Badge>
+        {name}
+      </Card>
+    )
+  }
+
   const [messages, setMessages] = useState([
 
   ])
 
   const [actions, setActions] = useState([
-    {
-      name: "Action 1",
-      description: "Action 1 description"
-    },
-    {
-      name: "Action 2",
-      description: "Action 2 description"
-    },
-    {
-      name: "Action 3",
-      description: "Action 3 description"
-    }
+
 
   ])
 
   const [requestsPerMinute, setRequestsPerMinute] = useState([
-    {
-      name: "Request 1",
-      description: "Request 1 description"
-    },
+
 
   ])
 
   const [unitTests, setUnitTests] = useState([
-    {
-      name: "Unit Test 1",
-      description: "Unit Test 1 description"
-    },
 
   ])
 
   const [output, setOutput] = useState([
-    {
-      name: "Output 1",
-      description: "Output 1 description"
-    },
+
 
   ])
 
@@ -81,9 +73,11 @@ export default function Page() {
 
   const bottomRef = useRef(null);
 
+
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    fetch("http://localhost:8080/digest-lm/unit-tests")
+    fetch("http://localhost:6020/digest-lm/unit-tests")
       .then(response => response.json())
       .then(data => {
 
@@ -92,19 +86,19 @@ export default function Page() {
         // setUnitTests(data.tests)
       })
       .catch(error => console.error("Error:", error));
-    fetch("http://localhost:8080/digest-lm/requests-per-minute")
+    fetch("http://localhost:6020/digest-lm/requests-per-minute")
       .then(response => response.json())
       .then(data => {
         setRequestsPerMinute(prev => [...prev, ...data.requests]);
       })
       .catch(error => console.error("Error:", error));
-    fetch("http://localhost:8080/digest-lm/output")
+    fetch("http://localhost:6020/digest-lm/output")
       .then(response => response.json())
       .then(data => {
         setOutput(prev => [...prev, ...data.output]);
       })
       .catch(error => console.error("Error:", error));
-    fetch("http://localhost:8080/digest-lm/actions")
+    fetch("http://localhost:6020/digest-lm/actions")
       .then(response => response.json())
       .then(data => {
         setActions(prev => [...prev, ...data.actions]);
@@ -151,24 +145,24 @@ export default function Page() {
                 {/* Input area */}
                 <div className="border-t px-4 py-2">
                   {/* <form className="flex items-center gap-2"> */}
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 m-4 w-70"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 text-sm"
-                      onClick={() => {
-                        setMessages(prev => [...prev, userMessage(message)]);
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 m-4 w-70"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 text-sm"
+                    onClick={() => {
+                      setMessages(prev => [...prev, userMessage(message)]);
 
 
-                        fetch("http://localhost:8080/digest-lm/user-message", {
-                          method: "POST",
-                          body: JSON.stringify({ message: message })
-                        })
+                      fetch("http://localhost:6020/digest-lm/user-message", {
+                        method: "POST",
+                        body: JSON.stringify({ message: message })
+                      })
                         .then(response => response.json())
                         .then(data => {
                           console.log(data.message)
@@ -179,10 +173,10 @@ export default function Page() {
                           console.log(messages)
                         })
                         .catch(error => console.error("Error:", error));
-                      }}
-                    >
-                      Send
-                    </button>
+                    }}
+                  >
+                    Send
+                  </button>
                   {/* </form> */}
                 </div>
               </Card>
@@ -203,7 +197,21 @@ export default function Page() {
                 </CardContent>
               </Card>
 
-              <Card className="row-span-2 col-span-1">
+              <Card className="row-span-1 col-span-1">
+                <CardHeader>
+                  <CardTitle>Test Success Rate</CardTitle>
+                  <CardDescription></CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[250px]">
+                    {requestsPerMinute.map((request, index) => (
+                      <div key={index}>{request.name}</div>
+                    ))}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              <Card className="row-span-1 col-span-1">
                 <CardHeader>
                   <CardTitle>Requests per Minute</CardTitle>
                   <CardDescription></CardDescription>
@@ -237,9 +245,9 @@ export default function Page() {
                   <CardDescription>HTTP Responses</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea>
+                  <ScrollArea className="h-[250px]">
                     {output.map((output, index) => (
-                      <div key={index}>{output.name}</div>
+                      <div key={index}>{outputMessage(output.name, output.description)}</div>
                     ))}
                   </ScrollArea>
                 </CardContent>

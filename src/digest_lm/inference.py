@@ -24,6 +24,9 @@ def save_github_repo_locally(github_org, github_repo_name):
     auth = Auth.Token(os.getenv("GITHUB_ACCESS_TOKEN"))
     g = Github(auth=auth)
 
+    print(github_org)
+    print(github_repo_name)
+
     repo = g.get_repo(f"{github_org}/{github_repo_name}")
     contents = repo.get_contents("")
 
@@ -33,15 +36,19 @@ def save_github_repo_locally(github_org, github_repo_name):
 
     contents = repo.get_contents("")
     while contents:
-        file_content = contents.pop(0)
-        if file_content.type == "dir":
-            contents.extend(repo.get_contents(file_content.path))
-        else:
-            print(".", end="")
-            FILE_URL = f"https://raw.githubusercontent.com/{github_org}/{github_repo_name}/refs/heads/{repo.default_branch}/{file_content.path}"
-            print(FILE_URL)
-            content = requests.get(FILE_URL).text
-            RAW_GITHUB_CONTENT += f"{file_content.path}\n{content}\n"
+        try:
+            file_content = contents.pop(0)
+            if file_content.type == "dir":
+                contents.extend(repo.get_contents(file_content.path))
+            else:
+                print(".", end="")
+                FILE_URL = f"https://raw.githubusercontent.com/{github_org}/{github_repo_name}/refs/heads/{repo.default_branch}/{file_content.path}"
+                print(FILE_URL)
+                content = requests.get(FILE_URL).text
+                RAW_GITHUB_CONTENT += f"{file_content.path}\n{content}\n"
+        except Exception as e:
+            print(e)
+            continue
 
     with open(f"static/{github_org}-{github_repo_name}.txt", "w") as f:
         f.write(RAW_GITHUB_CONTENT)
@@ -62,6 +69,21 @@ def generate_instruction(user_message: str) -> str:
     return completion.choices[0].message.content
 
 
+def convert_curl_script_to_python_requests(curl_script: str) -> dict:
+    completion = client.chat.completions.create(
+        model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+        messages=[
+            {
+                "role": "system",
+                "content": f"You are a helpful assistant that can convert curl scripts to python requests. The user provides a curl script. Convert the curl script to a python requests call. No imports are needed, just the requests call.",
+            },
+            {"role": "user", "content": f"Curl script: {curl_script}"},
+        ],
+    )
+
+    return completion.choices[0].message.content
+
+
 def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
     with open(f"static/{github_org}-{github_repo_name}.txt", "r") as f:
         RAW_GITHUB_CONTENT = f.read()
@@ -76,6 +98,9 @@ def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
             {"role": "user", "content": f"Codebase: {RAW_GITHUB_CONTENT}"},
         ],
     )
+
+    with open(f"scripts/sh/{github_org}-{github_repo_name}.sh", "w") as f:
+        f.write(completion.choices[0].message.content)
 
     return {"curl_scripts": completion.choices[0].message.content}
 
