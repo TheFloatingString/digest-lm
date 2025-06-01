@@ -54,4 +54,6 @@ async def catch_all(request: Request, full_path: str):
     # return JSONResponse(
     #     status_code=response_dict["status_code"], content=response_dict["response"]
     # )
-    return Response(content=str(response_dict['response']), status_code=response_dict['status_code'])#, status_code=str(response_dict['status_code']))
+    return Response(
+        content=str(response_dict["response"]), status_code=response_dict["status_code"]
+    )  # , status_code=str(response_dict['status_code']))

@@ -54,7 +54,10 @@ def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
     completion = client.chat.completions.create(
         model="Llama-4-Maverick-17B-128E-Instruct-FP8",
         messages=[
-            {"role": "system", "content": f"You are a helpful assistant that can generate curl scripts for a given codebase. The user provides the codebase. Generate a sample curl request for each endpoint in the codebase. Respond with all the curl requests, separated by newlines. Only return the curl requests, do not return anything else. The base url is {os.getenv('BASE_URL')}. Add a -i flag to the curl requests, followed by 'echo\necho ---' between each curl request."},
+            {
+                "role": "system",
+                "content": f"You are a helpful assistant that can generate curl scripts for a given codebase. The user provides the codebase. Generate a sample curl request for each endpoint in the codebase. Respond with all the curl requests, separated by newlines. Only return the curl requests, do not return anything else. The base url is {os.getenv('BASE_URL')}. Add a -i flag to the curl requests, followed by 'echo\necho ---' between each curl request.",
+            },
             {"role": "user", "content": f"Codebase: {RAW_GITHUB_CONTENT}"},
         ],
     )
@@ -63,7 +66,12 @@ def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
 
 
 async def run_inference(
-    github_org: str, github_repo_name: str, endpoint: str, action: str, body: str, headers: str
+    github_org: str,
+    github_repo_name: str,
+    endpoint: str,
+    action: str,
+    body: str,
+    headers: str,
 ) -> str:
     """
     Run inference on the code and user input.
@@ -73,7 +81,6 @@ async def run_inference(
 
     headers_str = " ".join([f"-H '{k}: {v}'" for k, v in headers.items()])
 
-
     completion = client.chat.completions.create(
         model="Llama-4-Maverick-17B-128E-Instruct-FP8",
         messages=[
@@ -81,7 +88,10 @@ async def run_inference(
                 "role": "system",
                 "content": f"You are a vercel instance that hosts the following code. {RAW_GITHUB_CONTENT}. The user sends the following request. What do you respond? Respond in the following format: {{'status_code': <int>, 'response': <str>}} Only return the JSON, do not return anything else. Even if there is an error, only return the JSON.",
             },
-            {"role": "user", "content": f"curl {action} {endpoint} -H '{headers}' -d '{body}'"},
+            {
+                "role": "user",
+                "content": f"curl {action} {endpoint} -H '{headers}' -d '{body}'",
+            },
         ],
     )
 
