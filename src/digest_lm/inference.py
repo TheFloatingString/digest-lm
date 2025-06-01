@@ -47,6 +47,21 @@ def save_github_repo_locally(github_org, github_repo_name):
         f.write(RAW_GITHUB_CONTENT)
 
 
+def generate_instruction(user_message: str) -> str:
+    completion = client.chat.completions.create(
+        model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+        messages=[
+            {
+                "role": "system",
+                "content": f"""You are a helpful assistant. Respond with a JSON object in the following format: {{"assistant_message": <str>, "tool_choice": <str>, "tool_input": <str>}}. Your options for tool choices are: 'generate_curl_scripts', 'save_github_repo_locally', 'run_inference'. If the user specifies a GitHub organization and repository, use the 'save_github_repo_locally' tool and set the tool_input='organization_name/repo_name' with the user's choice of organization and repository. Respond naturally in the assistant_message field. If the user asks for an invalid request, return empty string for tool_choice and tool_input. Assume the GitHub repo is always available locally. Only return the JSON, do not return anything else.""",
+            },
+            {"role": "user", "content": f"User message: {user_message}"},
+        ],
+    )
+
+    return completion.choices[0].message.content
+
+
 def generate_curl_scripts(github_org: str, github_repo_name: str) -> dict:
     with open(f"static/{github_org}-{github_repo_name}.txt", "r") as f:
         RAW_GITHUB_CONTENT = f.read()

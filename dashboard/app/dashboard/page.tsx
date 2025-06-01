@@ -163,9 +163,22 @@ export default function Page() {
                       className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 text-sm"
                       onClick={() => {
                         setMessages(prev => [...prev, userMessage(message)]);
-                        setMessages(prev => [...prev, assistantMessage("I'm sorry, I can't help with that.")]);
 
-                        console.log(messages)
+
+                        fetch("http://localhost:8080/digest-lm/user-message", {
+                          method: "POST",
+                          body: JSON.stringify({ message: message })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                          console.log(data.message)
+                          console.log(data)
+
+                          setMessages(prev => [...prev, assistantMessage(data.message)]);
+
+                          console.log(messages)
+                        })
+                        .catch(error => console.error("Error:", error));
                       }}
                     >
                       Send
