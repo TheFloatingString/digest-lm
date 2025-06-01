@@ -19,6 +19,7 @@ client = OpenAI(
     api_key=os.environ.get("LLAMA_API_KEY"), base_url="https://api.llama.com/compat/v1/"
 )
 
+RAW_GITHUB_CONTENT = ""
 
 def save_github_repo_locally(github_org, github_repo_name):
     auth = Auth.Token(os.getenv("GITHUB_ACCESS_TOKEN"))
@@ -60,7 +61,7 @@ def generate_instruction(user_message: str) -> str:
         messages=[
             {
                 "role": "system",
-                "content": f"""You are a helpful assistant. Respond with a JSON object in the following format: {{"assistant_message": <str>, "tool_choice": <str>, "tool_input": <str>}}. Your options for tool choices are: 'generate_curl_scripts', 'generate_special_curl_scripts', 'save_github_repo_locally', 'run_inference'. If the user specifies a GitHub organization and repository, use the 'save_github_repo_locally' tool and set the tool_input='organization_name/repo_name' with the user's choice of organization and repository. Respond naturally in the assistant_message field. If the user asks for an invalid request, return empty string for tool_choice and tool_input. If the user asks for a special curl script, use the 'generate_special_curl_scripts' tool and set the tool_input='organization_name/repo_name/special_request' with the user's choice of organization, repository, and special request. Assume the GitHub repo is always available locally. If the user is insistent about a tool choice, return the tool choice. Only return the JSON, do not return anything else.""",
+                "content": f"""You are a helpful assistant. Respond with a JSON object in the following format: {{"assistant_message": <str>, "tool_choice": <str>, "tool_input": <str>}}. Your options for tool choices are: 'generate_curl_scripts', 'generate_special_curl_scripts', 'save_github_repo_locally', 'run_inference'. If the user specifies a GitHub organization and repository, use the 'save_github_repo_locally' tool and set the tool_input='organization_name/repo_name' with the user's choice of organization and repository. Respond naturally in the assistant_message field. If the user asks for an invalid request, return empty string for tool_choice and tool_input. If the user asks for a special curl script (or if the generate curl request seems unreasonable), use the 'generate_special_curl_scripts' tool and set the tool_input='organization_name/repo_name/special_request' with the user's choice of organization, repository, and special request. Assume the GitHub repo is always available locally. If the user is insistent about a tool choice, return the tool choice. If the user asks for feedback on the code, provide itemized feedback on the code. Only return the JSON, do not return anything else. Here is the codebase: {RAW_GITHUB_CONTENT}""",
             },
             {"role": "user", "content": f"User message: {user_message}"},
         ],

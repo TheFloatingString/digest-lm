@@ -8,6 +8,7 @@ from digest_lm.inference import (
     generate_instruction,
     generate_curl_scripts,
     convert_curl_script_to_python_requests,
+    generate_special_curl_scripts,
 )
 import json
 import logging
@@ -190,6 +191,20 @@ async def digest_lm_user_message(request: Request):
         curl_scripts = generate_curl_scripts(
             GITHUB_ORG,
             GITHUB_REPO_NAME,
+        )
+        print(curl_scripts["curl_scripts"])
+        for line in curl_scripts["curl_scripts"].split("\n"):
+            print(line)
+            if "echo" not in line:
+                list_of_test_str.append(line)
+                print(">>>>>>>>>>>")
+                print(list_of_test_str)
+
+    elif model_resp_dict["tool_choice"] == "generate_special_curl_scripts":
+        curl_scripts = generate_special_curl_scripts(
+            GITHUB_ORG,
+            GITHUB_REPO_NAME,
+            special_request="generate 100 different curl requests",
         )
         print(curl_scripts["curl_scripts"])
         for line in curl_scripts["curl_scripts"].split("\n"):
